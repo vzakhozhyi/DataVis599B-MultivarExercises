@@ -1,0 +1,72 @@
+---
+title: "V2 TabularData Multivariate Class Exercises"
+author: "Vitalii Zakhozhyi"
+output: html_document
+---
+
+
+**Calling data and preparing it for exercises**
+
+```{r results='hide', warning=FALSE, message=FALSE}
+library(openxlsx)
+link2="https://github.com/EvansDataScience/data/raw/master/safeCitiesIndex.xlsx"
+safe2=read.xlsx(link2)
+safe2x=safe2
+safe2x$min=apply(safe2x[,c(2:5)],1,min)
+safe2x$min=rank(safe2x$min,ties.method ='first' )
+cityRk=as.factor(safe2x[order(safe2x$min),]$city)
+safe2x$city=factor(safe2x$city,
+                   levels= cityRk,
+                   labels = cityRk,
+                   ordered = T)
+safe2x$min=NULL
+```
+
+**Exercise : Improve and or complete one descriptive and one inferential plot from this session.**
+
+**Descriptive Plot**
+
+```{r fig.width=15, fig.height=10, eval=TRUE}
+library(ggiraph)
+library(ggiraphExtra)
+
+base = ggRadar(safe2x, aes(group='city'), legend.position="none") 
+plot1 = base + facet_wrap(~city,ncol = 10) 
+plot2 = plot1 + labs(title = "Digital, Health, Infrastructure, and Personal Safety in Cities",
+                    x =NULL, 
+                    y = NULL,
+                    caption = "Source: Safety City Index Data") + 
+                    theme(plot.title = element_text(hjust = 0.5, size = 25),
+                          plot.caption = element_text(hjust = 0, size = 15))
+plot2
+```
+
+
+**Inferential Plot**
+
+Regression analysis:
+
+```{r results='hide', warning=FALSE, message=FALSE}
+library(dotwhisker)
+library(broom)
+library(dplyr)
+
+model1=lm(PERSONAL~HEALTH+INFRASTRUCTURE,data=safe2[,-1])
+model1_t = tidy(model1) %>%   
+    mutate(model = "Model 1")
+
+model2=lm(PERSONAL~.,data=safe2[,-1])
+model2_t <- tidy(model2) %>% mutate(model = "Model 2")
+
+allModels=rbind(model1_t, model2_t)
+
+dwplot(allModels) + 
+    geom_vline(xintercept = 0, 
+               colour = "grey60", 
+               linetype = 2) +
+    scale_colour_grey(start = .1, end = .7) + 
+    theme(legend.title=element_blank(),  
+          plot.title = element_text(hjust = 0.5, size = 15)) + 
+    labs(title = "Comparison of 2 regression models", 
+         caption = "Source: Safety City Index Data")
+```
